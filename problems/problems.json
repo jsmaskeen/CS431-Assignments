@@ -1,0 +1,29 @@
+{
+    "crypto": [
+        {
+            "name": "columns-101",
+            "value": 5,
+            "description": "We have a message encrypted using Columnar Transposition: `UOLTICH1EEAOREIITMFSHLEE6NRIRANPSHBRFEFCR`\r\n\r\nWe only know that the key is 5 chars long.\r\n\r\nThe flag is the plaintext in all caps.",
+            "answer": "THENUMBEROFRAILSFORTHERAILFENCECIPHERIS16"
+        },
+        {
+            "name": "vigenere-101",
+            "value": 10,
+            "description": "We intercepted an admin's authentication traffic, but the passcode appears to be encrypted. We found a key on a sticky note, but the ciphertext remains unreadable.\r\n\r\nConnect to the server, decrypt the passcode using the key, and retrieve the flag.\n`nc 10.0.118.104 5050`",
+            "server": "vigenere-101.py",
+            "answer": "CNS431{v1g3n3r3_c1ph3r_1s_cl4ss1c}"
+        },
+        {
+            "name": "Rail Force One",
+            "value": 5,
+            "description": "Someone encrypted this message using Railfence cipher. Can you get the plaintext?\r\n\r\n`MHASIDYAKHBEWDEMFXTNURRCPQYTVORSRYAILEIHZTLTGOSREE4EUJATBOFO`",
+            "answer": "MAYBETRYRAILS4AFTERTHISTCNMEASHIKWFUPVRLZGEUBOOJEOTEYOQRXDHD"
+        },
+        {
+            "name": "Rail Force Two",
+            "value": 5,
+            "description": "Now that you got Rail Force One, you find out that the ciphertext was nested.\r\n\r\nWhat's the decrypted ciphertext in that flag?\r\n\r\nRemove the first 23 chars in the flag for Rail Force One and decrypt it again.",
+            "answer": "THEQUICKBROWNFOXJUMPEDOVERTHELAZYDOGS"
+        }
+    ]
+}

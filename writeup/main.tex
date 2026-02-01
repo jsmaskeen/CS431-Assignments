@@ -1,0 +1,100 @@
+\documentclass{article}%
+\usepackage{amsmath}%
+\usepackage{amsfonts}%
+\usepackage{amssymb}%
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[left=1.3cm, right=1.3cm, top=0.6in, bottom=0.9in]{geometry}
+%-------------------------------------------
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+\setlength{\parindent}{0.3in}
+
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{gray},
+  identifierstyle=\color{black},
+  showstringspaces=false,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single
+}
+
+\begin{document}
+
+\begin{flushright}
+\textbf{Jaskirat Singh Maskee, 231100146 \\
+1 February, 2026\\
+{\color{blue}\href{}{GitHub Repository}}\\
+CTF Username: \texttt{23110146}}
+\end{flushright}
+
+\begin{center}
+\textbf{CS 431: Computer and Network Security  \\
+Assignment 1} \\
+\end{center}
+
+\noindent
+\begin{minipage}[t]{0.57\textwidth}
+\subsubsection*{columns-101 | \texttt{python3 solution.py 1}}
+{Flag} : \texttt{THENUMBEROFRAILSFORTHERAILFENCECIPHERIS16}\\
+The problem provides a ciphertext encrypted via {\color{blue}\href{https://www.geeksforgeeks.org/dsa/columnar-transposition-cipher/}{columnar transposition}} with a known key length of 5. While {\color{blue}\href{https://www.dcode.fr/columnar-transposition-cipher}{dcode.fr}} was used for initial analysis, the solution was implemented from scratch. We brute-forced all $5! = 120$ column permutations, then arranged the ciphertext in the columns and scored the resulting plaintexts (read row wise in column order given by the key) using English trigram frequency analysis (based on {\color{blue}\href{https://calmcode.io/datasets/english_3grams}{english\_3grams.csv}} and using log likelihood). Note that the cipher text length (41) is not divisible by key length (5). So one column would have had an extra row. This was also accounted for while bruteforcing. The permutation with the highest score yielded the readable flag, which provided the hint for the subsequent Rail Fence problem.
+
+\subsubsection*{vigenere-101 | \texttt{python3 solution.py 2}}
+{Flag} : \texttt{CNS431\{v1g3n3r3\_c1ph3r\_1s\_cl4ss1c\}}\\
+The problem title tells us that {\color{blue}\href{https://www.geeksforgeeks.org/dsa/vigenere-cipher/}{vigenere cipher}} is used to encrypt the ciphertext. We run the given command, \texttt{nc 10.0.118.104 5050}, which gives us the ciphertext and the key ``VICTORY''. Note that the ciphertext contains numbers and exclamation marks as well. To decrypt, we repeat the key to match the length of the ciphertext (skipping over the non-alphabets), and then for every character, go to the corresponding row of the {\color{blue}\href{https://intellipaat.com/blog/wp-content/uploads/2022/06/image-1.png}{vigenere table}} (for any character, the corresponding row in the vigenere table starts the alphabet sequence from that character and loops around after \texttt{Z}), find the label of the column containing the corresponding ciphertext character. We keep the non-alphabets as it is. 
+Decoding the ciphertext, we get \texttt{Gw3atJob!Y0uCr4ck3dIt}. We submit this to the server, and the server responds with the flag: \texttt{CNS431\{v1g3n3r3\_c1ph3r\_1s\_cl4ss1c\}}. At the time of solving, We use {\color{blue}\href{https://www.dcode.fr/vigenere-cipher}{dcode.fr}} for this. However while writing the writeup, we wrote the decrypt function from scratch. Also, we include the communication with the server in our script. It handles {\color{blue}\href{https://stackoverflow.com/questions/19880190/interactive-input-output-using-python}{interactive input/output}} and {\color{blue}\href{https://stackoverflow.com/questions/59787040/stuck-in-infinite-loop-while-trying-to-read-all-lines-in-proc-stdout-readline}{printing the flag}}.
+    
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.41\textwidth}
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/1.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/2.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/3.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/4.png}
+\end{minipage}
+
+
+\subsubsection*{Rail Force One | \texttt{python3 solution.py 3}}
+{Flag} : \texttt{MAYBETRYRAILS4AFTERTHISTCNMEASHIKWFUPVRLZGEUBOOJEOTEYOQRXDHD}\\
+The problem title and the previous flag (``...RAILFENCECIPHERIS16'') suggested a {\color{blue}\href{https://www.geeksforgeeks.org/dsa/rail-fence-cipher-encryption-decryption/}{Rail Fence cipher}} with 16 rails. We solved this initially using {\color{blue}\href{https://www.dcode.fr/rail-fence-cipher}{dcode.fr}}. We then wrote a custom Rail Fence decoder in Python. The script reconstructs the zigzag matrix pattern for 16 rails, fills it with the ciphertext, and reads off the plaintext row by row. Note that the matrix will be of the shape (rails $\times$ length of ciphertext). This successfully decrypted the flag, which contained a hint for the next challenge.
+
+\subsubsection*{Rail Force Two | \texttt{python3 solution.py 4}}
+{Flag} : \texttt{THEQUICKBROWNFOXJUMPEDOVERTHELAZYDOGS}\\
+The plaintext from \textit{Rail Force One} started with the hint ``MAYBETRYRAILS4AFTERTHIS''. Following the problem description, we stripped these first 23 characters to isolate the nested ciphertext. Using the hint ``RAILS 4'', we applied our Rail Fence decoder with 4 rails (again, verified with {\color{blue}\href{https://www.dcode.fr/rail-fence-cipher}{dcode.fr}} but solved via script). This revealed the final plaintext flag.
+
+\newpage
+\section*{Source Code: solution.py}
+\lstset{style=python}
+\lstinputlisting{./../solution.py}
+\end{document}
