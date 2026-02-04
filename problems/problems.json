@@ -1,0 +1,32 @@
+{
+    "crypto": [
+        {
+            "name": "rsa-state-of-affairs",
+            "value": 10,
+            "description": "Welcome to the \"Ultimate (But an eeeasy one!) RSA Encryption Challenge!\"\r\n\r\nOur cryptography team has implemented what they believe to be an unbreakable RSA encryption system. They're so confident that they've even given you the public key parameters and the encrypted message containing a secret passcode.\r\n\r\nYour mission: Decrypt the message, extract the passcode, and claim your flag!\r\n\r\n\r\nConnect to the challenge server to receive:\r\n- Public key parameters (n, e)\r\n- Encrypted message (c)\r\n\r\nOnce you decrypt the message and find the passcode, submit it to the server to get your flag.\r\n",
+            "server":"rsa-state-of-affairs.py",
+            "answer": "CNS431{r5a_5t4t3_0f_4ff41r5}"
+        },
+        {
+            "name": "hash-extension",
+            "value": 15,
+            "description": "There is a flag-storage service running at `10.0.118.104:4310`. Use a SHA256 hash-extension attack to modify your cookie and add yourself to the 'admins' group. ",
+            "server": "hash-extension.py",
+            "answer": "431fl@g{D3@D3Xt3ns!0nL3ngth}"
+        },
+        {
+            "name": "Login Error",
+            "value": 25,
+            "description": " We forgot our credentials, help us to get the flag.",
+            "server": "login-error.py",
+            "answer": "cnsctf{23110146_1770137556.0036557_d271b672e4034c402cbbae36cf6c4c4d20f1a558f2ff743a8696a18c6d4627e4}"
+        },
+        {
+            "name": "Alice's Signature Mix-Up",
+            "value": 10,
+            "description": " In the early 2000s, Alice was signing a message for Bob using digital signatures. Faced with limited documentation, she was confused by the two keys involved. \r\nIn a rush, Alice computed the hash of the message and used RSA to sign the hash, sending both the message and the **signed hash** to Bob.\r\n\r\nBob, puzzled by the unusual signing method, suspected something was amiss.    \r\nNow, it's up to you to uncover the issue and find it!",
+            "server": "alice.py",
+            "answer": "CNS431{@l1c3_m@d3_@_k3y_mist@k3}"
+        }
+    ]
+}
