@@ -1,0 +1,34 @@
+{
+    "Binary Exploitation": [
+        {
+            "name": "BufferOverflow",
+            "value": 20,
+            "description": "Exploit the [Buffer Overflow](./BufferOverflow/vuln).\r\n\r\nYou can connect to it via the following details:",
+            "server":"nc 10.0.118.48 4455",
+            "answer": "hello:)CS431{ctfX}"
+        },
+        {
+            "name": "BufferOverflowCagedBird",
+            "value": 25,
+            "description": "Exploit the [Buffer Overflow](./BufferOverflowCagedBird/vuln).\r\n\r\nYou can connect to it via the following details.",
+            "server": "nc 10.0.118.48 4456",
+            "answer": "itsYOURcanary{helloCTF431}"
+        },
+        {
+            "name": "Smash",
+            "value": 30,
+            "description": "Our first [C program](./Smash/hello) that says hello, do you want to try it? :)\r\n\r\n",
+            "server": "nc 10.0.118.48 3377",
+            "answer": "cns431ctf{0oops 5up32 m4210 5m45h 8202}",
+            "files":["./Smash/libc-2.23.so"]
+        },
+        {
+            "name": "Reverse",
+            "value": 30,
+            "description": "Hi,\r\n\r\nI recovered a binary from Prof. Abhishek's CPU. I tried to reverse it but couldn't.\r\n\r\nCan you help me?\r\n\r\n-- Subhrajit",
+            "server": "nc 10.0.118.48 6464",
+            "answer": "cns431ctf{YEAH!y0u d1sc0v3r3d th3 p4sc4l ́s tr14ngl3}",
+            "files":["./Reverse/triangle"]
+        }
+    ]
+}

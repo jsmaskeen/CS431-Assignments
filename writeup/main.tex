@@ -1,0 +1,185 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[colorlinks=true, urlcolor=blue]{hyperref}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[left=1.3cm, right=1.3cm, top=0.6in, bottom=0.9in]{geometry}
+%-------------------------------------------
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+\setlength{\parindent}{0.3in}
+
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{gray},
+  identifierstyle=\color{black},
+  showstringspaces=false,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single
+}
+
+\begin{document}
+
+\begin{flushright}
+\textbf{Jaskirat Singh Maskeen, 23110146 \\
+\today\\
+{\color{blue}\href{https://github.com/jsmaskeen/CS431-Assignments/tree/assn3}{GitHub Repository}}\\ 
+CTF Username: \texttt{23110146}}
+\end{flushright}
+
+\begin{center}
+\textbf{CS 431: Computer and Network Security  \\
+Assignment 3} \\
+\end{center}
+
+\noindent
+\subsubsection*{BufferOverflow | \texttt{python3 solution.py 1}}
+{Flag} : \texttt{hello:)CS431\{ctfX\}}\\
+We first decompile the given binary \texttt{vuln}, so that it is easy to read through, using \href{https://dogbolt.org/}{Decompiler Explorer}. We see that the program expects a input string, and simply, stores it in a 160 byte character buffer, without validating the length. The function call to vuln looks like:
+\begin{lstlisting}[language={[x86masm]Assembler}]
+vuln:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 0xa0 # 160B (the buffer size)
+\end{lstlisting}
+So, we need to overwrite the address at \texttt{rbp + 8}. Hence we craft our payload: of size $168 + 8$ bytes. The last 8 bytes will be the address of the function we need to call, that is \texttt{win()}, which is stored at \texttt{0x40071d} (Can be found within \texttt{gdb ./vuln}, using \texttt{p \&win}). This function opens the flag.txt and prints it to the screen. So, we simply execute: \texttt{python3 -c "import sys; sys.stdout.buffer.write(b'JASKIRAT'*21 + b'\textbackslash x1d\textbackslash x07\textbackslash x40\textbackslash x00\textbackslash x00\textbackslash x00\textbackslash x00\textbackslash x00')" | ./vuln}. Note that the function address is written as 8 bytes in little endian format. Running this results in printing out our flag.
+
+\subsubsection*{BufferOverflowCagedBird | \texttt{python3 solution.py 2}}
+{Flag} : \texttt{itsYOURcanary\{helloCTF431\}}\\ 
+We first decompile the binary using \href{https://dogbolt.org/}{Decompiler Explorer}. (We can also use gdb to figure out the size of each variable, however it is easy to read decompiled binary rather than assembly. However, the addresses mentioned in the decompiled code might be wrong.) The \texttt{main()} function, first reads first four bytes of the flag, and stores it as the global canary. Then it calls the \texttt{vuln()} functions executes, it stores a copy of the value of global canary. Then it requests the user to enter an input (first it asks for the length of the input, then the input). If that input overflows, the canary is rewritten, and after that it checks, if global canary = local canary. If not then it concludes a hacking attempt. However it is easy to bypass this, as we can use brute force to guess the canary. The stack looks as follows (tracked from disassembled code):
+\begin{lstlisting}
+rbp+0x08   rip (return address)
+rbp+0x00   saved rbp
+rbp-0x04   (input loop counter)
+rbp-0x0c   [padding/alignment]
+rbp-0x10   local_canary (4 bytes)
+rbp-0x90   buffer (128 bytes)
+\end{lstlisting}
+So, we will simply send a payload of size 128 (to pad the buffer) followed by 1 byte extra (this is our guess for the first byte of the canary). If for one of the 256 values of the first byte, we get ``You said something'', as output, we get to know that our guess for that byte was correct. Similarly we can find the entire 4 byte canary.
+
+Now, we send our malicious payload, of size: 128 (buffer size) + 4 byte (known canary) + 12 bytes (padding) + 8 bytes (overwrite ebp) + 8 bytes (overwrite rip). rip is overwritten with the address of \texttt{win} function, which is figured out through gdb (using \texttt{p \&win}).
+Hence, we successfully bypass the canary, and are able to execute \texttt{win()}, which prints out the flag.
+
+
+\subsubsection*{Note:}
+\begin{quote}
+It is much easier to solve this problem, without thinking this much, as in the ctf environment for this problem, we can just do \texttt{ cat /tmp/exploit.py}. Moreover if we do \texttt{cat /tmp/payload}, we can see the actual canary value as well (\:\texttt{itsY}\:) It might be the case that this was unintentional, and that other students might have tried their custom exploits here, as the user \texttt{ctf} (us), have write permissions to the \texttt{/tmp} directory. Refer to Fig.~\ref{fig:img2n1} and Fig.~\ref{fig:img2n2}.
+\end{quote}
+
+
+\subsubsection*{Smash | \texttt{python3 solution.py 3}}
+{Flag} : \texttt{cns431ctf\{0oops\_5up32\_m4210\_5m45h\_8202\}}\\ 
+We first decompile the binary using \href{https://dogbolt.org/}{Decompiler Explorer}. The vulnerability in this problem is that in \texttt{say\_hello} function, we use \texttt{strcpy}, which is unsafe. We can potentially overwrite the items on the stack, beyond the 128 byte buffer. However we do not see any function, in the decompiled code, which might leak the flag. Running \texttt{\href{https://github.com/slimm609/checksec}{checksec} ./hello} shows that we have \texttt{NX enabled}, or in other words we cannot execute any code in the stack section, by overwriting PC to some address in the stack. We are also provided with the libc shared object, which indicates that we might do a \href{https://www.ired.team/offensive-security/code-injection-process-injection/binary-exploitation/return-to-libc-ret2libc}{return-to-libc} attack, where rather than executing our own code, we try to execute functions present in the libc library such as \texttt{system()}, and \texttt{exit()}. Also we notice that the binary is compiled for a 32 bit word size environment (\texttt{i386-32-little}). We also use \href{https://docs.pwntools.com/en/stable/}{pwntools}, to get the base address of libc, however, turns out that ALSR is on, hence we need to dynamically get the base address for libc, without exiting the program. Moreover, the  binary is not PIE (position independent executable), which is a good thing, as the binary loads at the same address, so addresses in the \texttt{.text} are not randomized. We start with connecting to the server and sending our initial payload, of length 136 bytes, (128 to fill the buffer, next 4 bytes to override ebp, and next 4 bytes to overwrite eip).
+
+To get the actual addresses of the linked libc binary, we first get the address of \texttt{printf} stored in \href{https://systemoverlord.com/2017/03/19/got-and-plt-for-pwning.html}{Global Offset Table} in the \texttt{hello} binary, then we pack it as a 4 byte unsigned integer. These are the first four bytes of our payload. Next few bytes (\texttt{plswork \%s plswork}) will exploit the format string vulnerability. Here when \texttt{printf} is called (in \texttt{say\_hello}) function, \%s will look at the first element above it's call frame in the stack, and that turns out to be the address of \texttt{printf} in GOT. 
+
+The stack looks like this (indentation denotes child function's call frame):
+
+\begin{lstlisting}
+higher addresses
+eip overwritten (main's address)
+ebp (overwritten junk)
+buf (128 bytes) (lower 4 bytes = printf_got)
+    printf_eip
+    printf_ebp
+    arg: not found, sees above stack
+lower addresses
+\end{lstlisting}
+
+The sting `plswork' is just to distinguish the start and end of the output written inplace of \%s. Now \%s prints until the null terminator, hence we take the first four bytes, unpack them to get the actual address of the \texttt{printf} function in the running binary. Importantly, we do not want our binary to exit, otherwise ALSR will change these addresses again, hence for the last four bytes of the payload, we overwrite eip with the address of the \texttt{main} function, which we can get from the \texttt{hello} binary (as no PIE). The remaining bytes are just padding.
+
+With this, we can compute the offset from libc, as $\text{offset} = \text{actual\_printf} - \texttt{printf\_addr\_in\_libc.so}$. With this offset, we craft our final payload, which is 132 byte of padding (to fill buffer, and overwrite ebp), then the address of the \texttt{system} function from libc (\texttt{libc.symbols['system'] + offset}), then a random 4 byte address to serve as the return address for the system function, followed by the input to the system function, that is, `\texttt{/bin/sh\textbackslash x00}'. Executing this, gives us access to shell, and we can do \texttt{cat flag.txt} to get the flag. 
+
+
+\subsubsection*{Reverse | \texttt{python3 solution.py 4}}
+{Flag} : \texttt{cns431ctf\{YEAH!y0u\_d1sc0v3r3d\_th3\_p4sc4l\'s\_tr14ngl3\}}\\
+We first, reverse (the name suggests it) the binary \texttt{triangle} using \href{https://dogbolt.org/}{Decompiler Explorer}. From the resulting decompiled code, we can infer infer what the program does. The main function, creates a random number say $x \equiv 15\: + $\:\texttt{rand()}$ \pmod{6}$ and then prints it. Here \texttt{rand()} is implicitly casted as \texttt{unsigned int} (see assembly/decompiled code) Then It calls \texttt{process(x)}, which starts iterating from $i=0$ to $i=x$, and expects the user input to be be equal to $\binom{x}{i}$. If that is true for all $i$, then the program executes \texttt{cat flag.txt}, which shows us the flag.
+\begin{figure}[h!]
+\centering
+
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}
+\centering
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/1.png}
+    \caption{}
+    \label{fig:img1}
+\end{subfigure}
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/2.png}
+    \caption{}
+    \label{fig:img2}
+\end{subfigure}
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/2_note_1.png}
+    \caption{}
+    \label{fig:img2n1}
+\end{subfigure}
+
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}
+\centering
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/3.png}
+    \caption{}
+    \label{fig:img3}
+\end{subfigure}
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/4.png}
+    \caption{}
+    \label{fig:img4}
+\end{subfigure}
+
+\begin{subfigure}{\linewidth}
+    \includegraphics[width=\linewidth]{../images/2_note_2.png}
+    \caption{}
+    \label{fig:img2n2}
+\end{subfigure}
+
+\end{minipage}
+
+\caption{}
+\label{fig:all}
+\end{figure}
+
+
+\newpage
+\section*{Source Code: solution.py}
+\lstset{style=python}
+\lstinputlisting{./../solution.py}
+\end{document}
