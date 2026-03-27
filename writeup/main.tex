@@ -1,0 +1,101 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[left=1.3cm, right=1.3cm, top=0.6in, bottom=0.9in]{geometry}
+%-------------------------------------------
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+\setlength{\parindent}{0.3in}
+
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{gray},
+  identifierstyle=\color{black},
+  showstringspaces=false,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single
+}
+
+\begin{document}
+
+\begin{flushright}
+\textbf{Jaskirat Singh Maskeen, 23110146 \\
+4 February, 2026\\
+{\color{blue}\href{https://github.com/jsmaskeen/CS431-Assignments/tree/assn4}{GitHub Repository}}\\ 
+CTF Username: \texttt{23110146}}
+\end{flushright}
+
+\begin{center}
+\textbf{CS 431: Computer and Network Security  \\
+Assignment 4} \\
+\end{center}
+
+\noindent
+\subsubsection*{rsa-state-of-affairs | \texttt{python3 solution.py 1}}
+{Flag} : \texttt{CNS431\{r5a\_5t4t3\_0f\_4ff41r5\}}\\
+We notice that the public exponent is very small, ($e=5$) and the modulus, $n$ is very large. As told in class, small public exponents are vulnerable, as the modulus becomes redundant, and the ciphertext $c$ is just $n^5$. We observed that the message $m$ was small enough such that $m^e < n$. To decrypt, we computed the integer 5th root of $c$ using {\color{blue}\href{https://github.com/gmpy2/gmpy2}{gmpy2.iroot}}. The resulting integer, when converted to bytes, revealed the plaintext password, which we sent to the server to obtain the flag.
+
+\subsubsection*{hash-extension | \texttt{python3 solution.py 2}}
+{Flag} : \texttt{431fl@g\{D3@D3Xt3ns!0nL3ngth\}}\\ 
+Here we can apply a {\color{blue}\href{https://crypto.stackexchange.com/questions/3978/understanding-the-length-extension-attack}{Length Extension Attack}} on SHA-256 (because of Cipher Block Chaining). The server signs cookies using $H(secret || message)$. As shown in class, we can compute $H(secret || message || padding || extension)$ given only $H(secret || message)$ and the length of the secret $+$ message, without knowing the secret itself. We used the {\color{blue}\href{https://github.com/stephenbradshaw/hlextend}{hlextend}} library to append the string \texttt{admins,} to the valid cookie \texttt{user=cns431...}. We forged the new signature and the corresponding extended message (including the necessary padding), which tricked the server into believing we are admins.
+
+\subsubsection*{Login Error | \texttt{python3 solution.py 3}}
+{Flag} : \texttt{cnsctf\{23110146\_1770205562.412272\_2ef1b9e9ce9e0ab03cb536b65ebed89d0e21aad07d28e51d2346ce0827a7edd9\}}\\ 
+Here we can perform the {\color{blue}\href{https://pentesterlab.com/glossary/cbc-bit-flipping}{Bit Flipping Attack}} in AES-CBC mode. In this mode, decryption of a block involves XORing with the previous ciphertext block (or IV for the first block). Changing a bit in the $IV$ (or $C_{i-1}$) flips the corresponding bit in the plaintext $P_i$. The server provided encrypted credentials \texttt{user:c?s} and \texttt{pass:c?f}. We needed to change \texttt{?} to \texttt{n} and \texttt{t} respectively (found by bruteforcing). We exploited this by XORing the specific bytes in the IV (since the message was in the first block) with $mask = ('?' \oplus 'n')$ and $mask = ('?' \oplus 't')$. Sending this modified ciphertext to the server allowed us to log in successfully and retrieve the flag.\\
+Note: An observation, the flag had the format which will match this regex: \verb!cnsctf\{\d{8}\_\d{10}\.\d+\_([0-9]|[a-f]){64}\}!. Also, the first part is the rollnumber, the middle part is the timestamp, and the last part looks like the hash (probably SHA-256).
+
+\subsubsection*{Alice's Signature Mix-Up | \texttt{python3 solution.py 4}}
+{Flag} : \texttt{CNS431\{@l1c3\_m@d3\_@\_k3y\_mist@k3\}}\\
+We tried many different types of cryptographic hashes but none worked. We then took the hint from the CTF server, and found it was a very simple additive hash. Hence, we computed this hash of the message by summing up all byte values and taking modulo $2^{32}-1$ (in code it can be done by taking bitwise and with $2^{32}-1$). Next we signed this hash using Alice's public key ($e, n$) instead of her private key. The server accepted this as a valid signature, and gave us the flag.
+
+\noindent
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/1.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/2.png}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/3.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/4.png}
+\end{minipage}
+
+\newpage
+\section*{Source Code: solution.py}
+\lstset{style=python}
+\lstinputlisting{./../solution.py}
+\end{document}
